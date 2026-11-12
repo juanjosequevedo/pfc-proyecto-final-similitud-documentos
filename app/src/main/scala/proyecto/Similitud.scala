@@ -1,5 +1,5 @@
 package proyecto
-
+import scala.annotation.tailrec
 import scala.util.Random
 
 /**
@@ -71,19 +71,36 @@ object Similitud {
    * Pasa el texto a minúsculas, convierte en separador todo carácter que no
    * sea letra o dígito y devuelve el vector de palabras no vacías.
    */
-  def normalizar(texto: String): Vector[String] = ???
+  def normalizar(texto: String): Vector[String] = {
+    val minusculas = texto.toLowerCase
+    val textoFiltrado = minusculas.map(c =>
+      if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) c
+      else ' ')
+    textoFiltrado.split(" ").filter(palabra => !palabra.isEmpty).toVector
+  }
 
   /**
    * Los t - k + 1 fragmentos de k palabras consecutivas, en el orden en que
    * aparecen; el vector vacío si el documento tiene menos de k palabras.
    */
-  def fragmentos(ts: Vector[String], k: Int): Vector[Fragmento] = ???
-
+  def fragmentos(ts: Vector[String], k: Int): Vector[Fragmento] = {
+  @tailrec
+  def aux(resto: Vector[String], acc: Vector[Fragmento]): Vector[Fragmento] = {
+    if (resto.length < k) acc
+    else aux(resto.tail, acc ++ Vector(resto.take(k)))
+    }
+    if (k <= 0 || ts.length < k) Vector()
+    else aux(ts, Vector())
+  }
   /** El conjunto de fragmentos del documento: un repetido cuenta una vez. */
-  def huella(d: Documento, k: Int): Huella = ???
+  def huella(d: Documento, k: Int): Huella = {
+    fragmentos(palabrasDoc(d), k).toSet
+  }
 
   /** Una huella por documento del corpus, en el mismo orden. */
-  def huellas(c: Corpus, k: Int): Vector[Huella] = ???
+  def huellas(c: Corpus, k: Int): Vector[Huella] = {
+    c.map(d => huella(d, k))
+  }
 
   /**
    * Índice de Jaccard de dos huellas, el tamaño de la intersección sobre el de
