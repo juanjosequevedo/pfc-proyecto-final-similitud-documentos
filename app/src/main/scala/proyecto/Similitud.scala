@@ -144,9 +144,8 @@ object Similitud {
    */
   def parejasCandidatas(idx: Indice): Vector[Pareja] = {
 
-    idx.values.toVector.flatMap(documentos => documentos.toVector.sorted.combinations(2).map{
-
-      case Vector(i, j) => (i, j)}).distinct.sorted
+    idx.values.toVector.flatMap(documentos => documentos.toVector.sorted.combinations(2).map(
+      par => (par(0), par(1)))).distinct.sorted
   }
 
   /**
