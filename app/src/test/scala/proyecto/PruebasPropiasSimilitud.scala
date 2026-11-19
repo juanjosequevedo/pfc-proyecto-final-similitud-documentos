@@ -324,5 +324,140 @@ class PruebasPropiasSimilitud extends AnyFunSuite {
     ))
   }
 
+  // detectarDirecto -------------------------------------------------------------------
+
+  test("detectarDirecto: cuenta fragmentos repetidos una sola vez") {
+    val c: Corpus = Vector(
+      ("a", Vector("a", "b", "a", "b", "a")),
+      ("b", Vector("a", "b", "a", "c", "a"))
+    )
+
+    val r = detectarDirecto(c, 2, 0.5, 5)
+
+    assert(r.length == 1)
+    assert((r.head._1, r.head._2) == (0, 1))
+    assert(math.abs(r.head._3 - 0.5) < 1e-9)
+  }
+
+  test("detectarDirecto: filtra por umbral dentro de un corpus mixto") {
+    val c: Corpus = Vector(
+      ("d0", Vector("a", "b", "c", "d")),
+      ("d1", Vector("a", "b", "x", "y")),
+      ("d2", Vector("p", "q", "r", "s")),
+      ("d3", Vector("p", "q", "r", "t"))
+    )
+
+    val r = detectarDirecto(c, 2, 0.3, 5)
+
+    assert(r.map(m => (m._1, m._2)) == Vector((2, 3)))
+    assert(math.abs(r.head._3 - 0.5) < 1e-9)
+  }
+
+  test("detectarDirecto: incluye parejas cuya similitud iguala el umbral") {
+    val c: Corpus = Vector(
+      ("a", Vector("sol", "luna", "mar", "rio")),
+      ("b", Vector("sol", "luna", "nube", "cielo"))
+    )
+
+    val r = detectarDirecto(c, 2, 0.2, 5)
+
+    assert(r.map(m => (m._1, m._2)) == Vector((0, 1)))
+    assert(math.abs(r.head._3 - 0.2) < 1e-9)
+  }
+
+  test("detectarDirecto: ordena por similitud y respeta el tope p") {
+    val c: Corpus = Vector(
+      ("a", Vector("a", "b", "c")),
+      ("b", Vector("a", "b", "c")),
+      ("c", Vector("a", "b", "x")),
+      ("d", Vector("q", "r", "s"))
+    )
+
+    val r = detectarDirecto(c, 2, 0.3, 2)
+
+    assert(r.map(m => (m._1, m._2)) == Vector((0, 1), (0, 2)))
+    assert(math.abs(r(0)._3 - 1.0) < 1e-9)
+    assert(math.abs(r(1)._3 - 1.0 / 3.0) < 1e-9)
+  }
+
+  test("detectarDirecto: con huellas vacías y umbral cero devuelve ceros") {
+    val c: Corpus = Vector(
+      ("a", Vector("sol")),
+      ("b", Vector("luna")),
+      ("c", Vector("mar"))
+    )
+
+    assert(detectarDirecto(c,3,0.0,2) == Vector((0,1,0.0),(0,2,0.0)))
+  }
+
+  // detectarConIndice -------------------------------------------------------------------
+
+  test("detectarConIndice: omite documentos que no comparten fragmentos") {
+    val c: Corpus = Vector(
+      ("a", Vector("sol","luna","nube","mar")),
+      ("b", Vector("sol","luna","rio","cielo")),
+      ("c", Vector("uno","dos","tres","cuatro"))
+    )
+
+    val r = detectarConIndice(c,2,0.15,5)
+
+    assert(r.map(m => (m._1, m._2)) == Vector((0, 1)))
+    assert(math.abs(r.head._3 - 0.2) < 1e-9)
+  }
+
+  test("detectarConIndices: no repite una pareja que comparte varios fragmentos") {
+    val c: Corpus = Vector(
+      ("a", Vector("a","b","c","d")),
+      ("b", Vector("a","b","c","e")),
+      ("c", Vector("x","y","z"))
+    )
+
+    val r = detectarConIndice(c,2,0.5,5)
+
+    assert(r.map(m => (m._1, m._2)) == Vector((0, 1)))
+    assert(math.abs(r.head._3 - 0.5) < 1e-9)
+  }
+
+  test("detectarConIndice: ordena empates por posición y respeta el tope p") {
+    val c: Corpus = Vector(
+      ("a", Vector("a","b")),
+      ("b", Vector("x","y")),
+      ("c", Vector("a","b")),
+      ("d", Vector("x","y"))
+    )
+
+    val todas = detectarConIndice(c,2,1.0,5)
+
+    assert(todas == Vector((0,2,1.0),(1,3,1.0)))
+    assert(detectarConIndice(c,2,1.0,1) == Vector((0,2,1.0)))
+  }
+
+  test("detectarConIndice: funciona con fragmentos de una palabra") {
+    val c: Corpus = Vector(
+      ("a", Vector("a","b","c")),
+      ("b", Vector("a","d","e")),
+      ("c", Vector("x","y","z"))
+    )
+
+    val r = detectarConIndice(c,1,0.2,5)
+
+    assert(r.map(m => (m._1, m._2)) == Vector((0, 1)))
+    assert(math.abs(r.head._3 - 0.2) < 1e-9)
+  }
+
+  test("detectarConIndice: con umbral cero incluye parejas de similitud cero") {
+    val c: Corpus = Vector(
+      ("a", Vector("sol")),
+      ("b", Vector("luna")),
+      ("c", Vector("mar"))
+    )
+
+    val esperado = Vector((0,1,0.0),(0,2,0.0))
+
+    assert(detectarConIndice(c,2,0.0,2) == esperado)
+    assert(detectarConIndice(c,2,0.0,2) ==
+    detectarDirecto(c,2,0.0,2))
+  }
 }
+
 
