@@ -34,5 +34,6 @@ object App {
     println("Las versiones paralelas, con corte 2")
     println("  directo:    " + detectarDirectoPar(ejemplo2, 3, 0.1, 10, 2))
     println("  con indice: " + detectarConIndicePar(ejemplo2, 3, 0.1, 10, 2))
+
   }
 }
