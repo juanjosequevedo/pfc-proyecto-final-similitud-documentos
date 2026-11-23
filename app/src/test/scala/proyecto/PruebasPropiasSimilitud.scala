@@ -324,6 +324,79 @@ class PruebasPropiasSimilitud extends AnyFunSuite {
     ))
   }
 
+  // ParejasCandidatas------------------------------------------------------------------
+
+  test("parejasCandidatas: un índice vacío no produce parejas") {
+    assert(parejasCandidatas(Map.empty).isEmpty)
+  }
+
+  test("parejasCandidatas: fragmentos de un solo documento no producen parejas") {
+    val idx: Indice = Map(
+      Vector("cielo", "azul") -> Set(2),
+      Vector("mar", "tranquilo") -> Set(5)
+    )
+    assert(parejasCandidatas(idx).isEmpty)
+  }
+
+  test("parejasCandidatas: tres documentos generan las tres parejas ordenadas") {
+    val idx: Indice = Map(Vector("café", "caliente") -> Set(7, 1, 4))
+
+    assert(parejasCandidatas(idx) == Vector((1, 4), (1, 7), (4, 7)))
+  }
+
+  test("parejasCandidatas: dos fragmentos compartidos generan una sola pareja") {
+    val idx: Indice = Map(
+      Vector("río", "grande") -> Set(6, 2),
+      Vector("agua", "clara") -> Set(2, 6)
+    )
+
+    assert(parejasCandidatas(idx) == Vector((2, 6)))
+  }
+
+  test("parejasCandidatas: solo empareja documentos que comparten un fragmento") {
+    val idx: Indice = Map(
+      Vector("hoja", "verde") -> Set(8, 3),
+      Vector("viento", "suave") -> Set(5, 8),
+      Vector("suelo", "seco") -> Set(4, 1)
+    )
+
+    assert(parejasCandidatas(idx) == Vector((1, 4), (3, 8), (5, 8)))
+  }
+
+  //Ranking----------------------------------------------------------------------------
+
+  test("ranking: incluye el valor igual al umbral y descarta el inferior") {
+    val ss: Vector[Medicion] = Vector((0, 2, 0.6), (1, 2, 0.59), (0, 1, 0.9))
+
+    assert(ranking(ss, 0.6, 5) == Vector((0, 1, 0.9), (0, 2, 0.6)))
+  }
+
+  test("ranking: desempata por primera y segunda posición de la pareja") {
+    val ss: Vector[Medicion] = Vector((2, 3, 0.8), (0, 4, 0.8), (0, 1, 0.8))
+    val esperado: Vector[Medicion] = Vector((0, 1, 0.8), (0, 4, 0.8), (2, 3, 0.8))
+
+    assert(ranking(ss, 0.5, 3) == esperado)
+    assert(ranking(ss.reverse, 0.5, 3) == esperado)
+  }
+
+  test("ranking: con p igual a uno conserva la medición de mayor similitud") {
+    val ss: Vector[Medicion] = Vector((0, 2, 0.7), (1, 2, 0.98), (0, 1, 0.85))
+
+    assert(ranking(ss, 0.7, 1) == Vector((1, 2, 0.98)))
+  }
+
+  test("ranking: con p igual a cero da un resultado vacío") {
+    val ss: Vector[Medicion] = Vector((0, 1, 0.95))
+
+    assert(ranking(ss, 0.5, 0).isEmpty)
+  }
+
+  test("ranking: da un resultado vacío si ninguna medición alcanza el umbral") {
+    val ss: Vector[Medicion] = Vector((1, 2, 0.2), (1, 3, 0.4))
+
+    assert(ranking(ss, 0.5, 3).isEmpty)
+  }
+
   // detectarDirecto -------------------------------------------------------------------
 
   test("detectarDirecto: cuenta fragmentos repetidos una sola vez") {
